@@ -5,20 +5,18 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from fastapi.middleware.cors import CORSMiddleware
 import datetime
-
-# Import from your database.py file
 from database import SessionLocal, engine, Base
 
 
-# --- SQLAlchemy Models (DB Tables) ---
+# SQLAlchemy Models (DB Tables) 
 
-# FIX: Added a new UserDB model to store registered users
+# UserDB model to store registered users
 class UserDB(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     phone = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
-    password = Column(String) # In a real app, this should be hashed!
+    password = Column(String) 
     fName = Column(String)
     lName = Column(String)
     userType = Column(String)
@@ -46,7 +44,7 @@ class WheelSpecificationsDB(Base):
 # Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
 
-# --- FastAPI Config ---
+# FastAPI Config 
 
 app = FastAPI()
 
@@ -67,8 +65,7 @@ def get_db():
         db.close()
 
 
-# --- Pydantic Schemas ---
-# ... (all your existing Pydantic schemas remain the same)
+# Pydantic Schemas
 class BogieDetails(BaseModel):
     bogieNo: str
     dateOfIOH: str
@@ -169,11 +166,8 @@ class SignupRequest(BaseModel):
     createdByUserRole: Optional[str] = None
 
 
-# --- API Routes ---
+# API Routes
 
-#
-# --- FIX: THIS IS THE MISSING SIGNUP ENDPOINT ---
-#
 @app.post("/api/users/request-user/")
 def signup_user(user_data: SignupRequest, db: Session = Depends(get_db)):
     # Check if user already exists
@@ -181,10 +175,6 @@ def signup_user(user_data: SignupRequest, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="Email or phone number already registered")
 
-    # In a real app, you would hash the password here before saving
-    # from passlib.context import CryptContext
-    # pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    # hashed_password = pwd_context.hash(user_data.password)
 
     new_user = UserDB(
         fName=user_data.fName,
