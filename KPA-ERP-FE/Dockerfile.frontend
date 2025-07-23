@@ -1,0 +1,37 @@
+# --- Stage 1: Build the Flutter Web App ---
+# Use a stable Debian image and install Flutter manually.
+FROM debian:stable-slim AS build
+
+# Install all necessary tools
+RUN apt-get update && apt-get install -y git curl unzip xz-utils libgconf-2-4
+
+# Download and install a specific, known-good version of the Flutter SDK
+RUN curl -o flutter.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.19.6-stable.tar.xz
+RUN tar xf flutter.tar.xz
+ENV PATH="/flutter/bin:${PATH}"
+
+# This command tells Git to trust the Flutter directory, fixing the "dubious ownership" error.
+RUN git config --global --add safe.directory /flutter
+
+# Set the working directory for the app
+WORKDIR /app
+
+# Copy the Flutter project files
+COPY . .
+
+# Install Flutter dependencies
+RUN flutter pub get
+
+# Build the web application for release
+RUN flutter build web --release
+
+
+# --- Stage 2: Serve the built files with Nginx ---
+# Use the official Nginx image
+FROM nginx:stable-alpine
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/build/web /usr/share/nginx/html
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
