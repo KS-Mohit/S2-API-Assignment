@@ -1,0 +1,44 @@
+# This file defines your multi-container application.
+version: '3.8'
+
+services:
+  # 1. The Backend Service (your Python App)
+  backend:
+    build:
+      context: ./backend  # Path to your backend folder
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000" # Expose port 8000 to your host machine
+    volumes:
+      - ./backend:/code # Mount your backend code for live reloading
+    environment:
+      # These variables are passed to your Python app.
+      # The database host is now 'db', the name of our database service.
+      - DATABASE_URL=postgresql://user:password@db:5432/kpa_erp_db
+    depends_on:
+      - db # Tells Docker to start the database before the backend
+
+  # 2. The Frontend Service (your Flutter App served by Nginx)
+  frontend:
+    build:
+      context: ./KPA-ERP-FE # Path to your Flutter project folder
+      dockerfile: Dockerfile.frontend # We will create this file next
+    ports:
+      - "80:80" # Expose port 80 (standard web port) to your host machine
+    depends_on:
+      - backend # Start the backend before the frontend
+
+  # 3. The Database Service (PostgreSQL)
+  db:
+    image: postgres:13 # Use an official PostgreSQL image
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=kpa_erp_db
+    ports:
+      - "5432:5432" # Expose the database port for tools like DBeaver
+
+volumes:
+  postgres_data:
